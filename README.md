@@ -1,3 +1,13 @@
+This is a fork of the scrapehero-code/amazon-scraper: https://github.com/scrapehero-code/amazon-scraper. 
+Its been slightly modified for use in Canada and uploads to google sheets
+
+The original repo has not been updated for a few years however if original creator/s reach out for pull or want this gone I will make that happen. 
+
+searchresults.py has been optionally intergrated with gsspread package (MIT liscence Copyright (C) 2011-2023 Anton Burnashev) for automatic upload to google sheets. 
+Currently my implementaion requires you to have your own api key (json file in root directory) to work. For more information check burnash/gspread https://github.com/burnash/gspread
+
+
+
 # Amazon Scraper using Selectorlib 
 
 A simple amazon scraper to extract product details and prices from Amazon.com using Python Requests and Selectorlib. 

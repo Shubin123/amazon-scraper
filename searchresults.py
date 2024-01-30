@@ -1,13 +1,21 @@
 from selectorlib import Extractor
-import requests 
-import json 
-from time import sleep
+import requests
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
+ENABLE_GSHEETS = True  # Set this to False to disable Google Sheets writing
 
-# Create an Extractor by reading from the YAML file
-e = Extractor.from_yaml_file('search_results.yml')
+# Google Sheets setup
+def init_gsheet(sheet_name):
+    scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name('clientsecret.json', scope) #stored apikey
+    client = gspread.authorize(creds)
+    sheet = client.open(sheet_name).sheet1
+    return sheet
 
-def scrape(url):  
+def scrape(url, extractor):  
+
 
     headers = {
         'dnt': '1',
@@ -18,7 +26,7 @@ def scrape(url):
         'sec-fetch-mode': 'navigate',
         'sec-fetch-user': '?1',
         'sec-fetch-dest': 'document',
-        'referer': 'https://www.amazon.com/',
+        'referer': 'https://www.amazon.ca/',
         'accept-language': 'en-GB,en-US;q=0.9,en;q=0.8',
     }
 
@@ -33,17 +41,36 @@ def scrape(url):
             print("Page %s must have been blocked by Amazon as the status code was %d"%(url,r.status_code))
         return None
     # Pass the HTML of the page and create 
-    return e.extract(r.text)
+    return extractor.extract(r.text)
 
-# product_data = []
-with open("search_results_urls.txt",'r') as urllist, open('search_results_output.jsonl','w') as outfile:
-    for url in urllist.read().splitlines():
-        data = scrape(url) 
-        if data:
-            for product in data['products']:
-                product['search_url'] = url
-                print("Saving Product: %s"%product['title'])
-                json.dump(product,outfile)
-                outfile.write("\n")
-                # sleep(5)
+# Sample run call, replace 'num' with your desired number
+
+def run():
+    # Create an Extractor by reading from the YAML file
+    e = Extractor.from_yaml_file('search_results.yml')
     
+    product_data = []
+    gsheet = None
+
+    if ENABLE_GSHEETS:
+        gsheet = init_gsheet('sales-list')  # Replace with your Google Sheet name
+
+    with open("search_results_urls.txt", 'r') as urllist, open('search_results_output.jsonl', 'w') as outfile:
+        for url in urllist.read().splitlines():
+            data = scrape(url, e)
+            if data:
+                for product in data['products']:
+                    product['search_url'] = url
+                    print("Saving Product: %s" % product['title'])
+                    product_data.append(product)
+
+                    # Write to JSONL file
+                    json.dump(product, outfile)
+                    outfile.write("\n")
+
+                    # Write to Google Sheets
+                    if ENABLE_GSHEETS and gsheet:
+                        gsheet.append_row(list(product.values()))
+# run()
+                        
+run()
