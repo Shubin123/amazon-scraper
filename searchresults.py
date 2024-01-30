@@ -3,6 +3,7 @@ import requests
 import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from datetime import datetime
 
 ENABLE_GSHEETS = True  # Set this to False to disable Google Sheets writing
 
@@ -59,18 +60,34 @@ def run():
         for url in urllist.read().splitlines():
             data = scrape(url, e)
             if data:
+                # Add timestamp for this URL batch
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                # Flag to identify the first product in each URL batch
+                first_product_in_batch = True
+
                 for product in data['products']:
-                    product['search_url'] = url
-                    print("Saving Product: %s" % product['title'])
-                    product_data.append(product)
+                    # Combine the base URL with the product's URL
+                    product['url'] = f"https://amazon.ca{product['url']}"
 
                     # Write to JSONL file
-                    json.dump(product, outfile)
+                    product_data_row = product.copy()
+                    product_data_row['search_url'] = url  # Add search URL to each product data
+                    print("Saving Product: %s" % product['title'])
+                    json.dump(product_data_row, outfile)
                     outfile.write("\n")
+
 
                     # Write to Google Sheets
                     if ENABLE_GSHEETS and gsheet:
-                        gsheet.append_row(list(product.values()))
-# run()
+                        if first_product_in_batch:
+                            # Append a separate row for search URL and timestamp
+                            gsheet.append_row(['Search URL:', url, 'Timestamp:', timestamp])
+                            first_product_in_batch = False
+                        
+                        # Then append product data
+                        gsheet.append_row([str(value) for value in product_data_row.values()])
+                    
+        
                         
 run()
