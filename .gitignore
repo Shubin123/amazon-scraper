@@ -2,3 +2,4 @@
 clientsecret.json
 *.pyc
 search_results_output.jsonl
+.DS_Store

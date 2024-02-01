@@ -4,6 +4,7 @@ import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+from time import sleep
 
 ENABLE_GSHEETS = True  # Set this to False to disable Google Sheets writing
 
@@ -56,6 +57,7 @@ def run():
     if ENABLE_GSHEETS:
         gsheet = init_gsheet('sales-list')  # Replace with your Google Sheet name
 
+    #make sure search_results.txt does not have empty eol it will crash
     with open("search_results_urls.txt", 'r') as urllist, open('search_results_output.jsonl', 'w') as outfile:
         for url in urllist.read().splitlines():
             data = scrape(url, e)
@@ -87,7 +89,12 @@ def run():
                         
                         # Then append product data
                         gsheet.append_row([str(value) for value in product_data_row.values()])
-                    
-        
                         
+                        sleep(1.5) #slow down cause we are being rate limited
+                    
+         
 run()
+
+#TODO: merge rest of selectorlib selectors (selectors.yml) or atleast try and see how image url can be included
+
+    
